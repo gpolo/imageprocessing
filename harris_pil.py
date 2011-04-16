@@ -11,6 +11,8 @@ from PIL import Image, ImageDraw, ImageOps, ImageTk
 from colorsys import rgb_to_hsv
 from collections import defaultdict
 
+sys.setrecursionlimit(10000)
+
 #import matplotlib
 #matplotlib.use('TkAgg') # XXX Esse backend deixa mais lento o plot,
 #                        # mas se não usar não da pra mudar de imagem :/
@@ -45,21 +47,83 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     corner_img = Image.new('L', img.size)
     corner_pix = corner_img.load()
     #rect_img = Image.new('L', img.size)
+    caption_reg_img = Image.new('L', img.size)
+    caption_pix = caption_reg_img.load()
 
     w = gaussian_mask(wwidth, wheight, sigma)
 
     #band = list(img.split()) + [ImageOps.grayscale(img)]
-    band = [ImageOps.grayscale(img)]
-    #band = list(img.split())
+    #band = [ImageOps.grayscale(img)]
+    band = list(img.split())
     for img_gray in band:
-        do_harris(new_img, img_gray, edge_pix, corner_pix, #rect_img,
+        do_harris(new_img, img_gray, edge_pix, edge_img, corner_pix, #rect_img,
                 threshold, w)
+        from scipy import ndimage
+        edge_blur = edge_img.copy()
+        edge_blur_pix = edge_blur.load()
+        result = ndimage.gaussian_filter(numpy.asarray(edge_blur), 1)
+        for x in xrange(result.shape[1]):
+            for y in xrange(result.shape[0]):
+                edge_blur_pix[x, y] = result[y, x]
 
-    return w, new_img, edge_img, corner_img#, rect_img
+    max_x, max_y = new_img.size
+
+    new_white = []
+    for x in xrange(max_x):
+        for y in xrange(max_y):
+            if edge_pix[x, y]:
+                continue
+            try:
+                if edge_pix[x-1, y] or edge_pix[x+1, y]:
+                    new_white.append((x, y))
+                elif edge_pix[x, y-1] or edge_pix[x, y+1]:
+                    new_white.append((x, y))
+            except IndexError:
+                pass
+    for x, y in new_white:
+        edge_pix[x, y] = 255
+
+    flood_fill(edge_pix, max_x, max_y)
+
+    for x in xrange(max_x):
+        for y in xrange(max_y):
+            if edge_pix[x, y] or caption_pix[x, y]:
+                continue
+            caption_pix[x, y] = 255
+            while y - 1 > 0 and not not edge_pix[x, y]:# in (255, 0):
+                y -= 1
+                caption_pix[x, y] = 255
+            while y + 1 < max_y and not edge_pix[x, y]:# in (255, 0):
+                y += 1
+                caption_pix[x, y] = 255
+            while x + 1 < max_x and not edge_pix[x, y]:# in (255, 0):
+                x += 1
+                caption_pix[x, y] = 255
+            while x - 1 > 0 and not edge_pix[x, y]:# in (255, 0):
+                x -= 1
+                caption_pix[x, y] = 255
+
+    data = list(caption_reg_img.getdata())
+    masksize = 3
+    maskelems = masksize ** 2
+    start = (masksize - 1) / 2
+
+    for _ in xrange(2): # XXX N aplicações do filtro da mediana
+        for x in xrange(start, max_x - start):
+            for y in xrange(start, max_y - start):
+                val = [caption_pix[x+i, y+j]
+                    for i in xrange(-start, start + 1)
+                    for j in xrange(-start, start + 1)]
+                val.sort()
+                data[y * max_x + x] = val[maskelems / 2]
+    caption_reg_img.putdata(data)
+
+
+    return w, new_img, edge_img, corner_img, edge_blur, caption_reg_img
 
 
 #def do_harris(new_img, img_gray, edge_pix, corner_pix, rect_img, threshold, w):
-def do_harris(new_img, img_gray, edge_pix, corner_pix, threshold, w):
+def do_harris(new_img, img_gray, edge_pix, edge_img,corner_pix, threshold, w):
     img_orig = new_img.copy()
     img_pix = new_img.load()
     img2d = numpy.asarray(img_gray)
@@ -140,6 +204,13 @@ def do_harris(new_img, img_gray, edge_pix, corner_pix, threshold, w):
        for y in xrange(-nhood, nhood + 1) if x != 0 and y != 0]
     do_hysteresis(img_pix, edge_pix, edge, maybe_edge, lower_threshold, dirs)
 
+    draw = ImageDraw.Draw(edge_img)
+    for x, y in corner:
+        draw.rectangle((x-1, y-1, x+1, y+1), fill='white')
+
+    max_x, max_y = img_orig.size
+    #print dirs
+
     #find_rectangles(img_orig, rect_img, edge_pix, corner)
 
     print R
@@ -162,6 +233,21 @@ def do_harris(new_img, img_gray, edge_pix, corner_pix, threshold, w):
     #pp = PdfPages('plot1.pdf')
     #pp.savefig()
     #pp.close()
+
+
+def flood_fill(edge_pix, max_x, max_y):#, x=0, y=0):
+    to_do = [(0, 0)]
+    while to_do:
+        x, y = to_do.pop()
+        edge_pix[x, y] = 128
+        if x > 0:
+            if not edge_pix[x-1, y]: to_do.append((x-1, y))
+        if x < max_x - 1:
+            if not edge_pix[x+1, y]: to_do.append((x+1, y))
+        if y < max_y - 1:
+            if not edge_pix[x, y+1]: to_do.append((x, y+1))
+        if y > 0:
+            if not edge_pix[x, y-1]: to_do.append((x, y-1))
 
 
 def find_rectangles(img_orig, rect_img, edge_pix, corner):
@@ -303,8 +389,9 @@ class App(object):
 
         start = time.time()
         #mask, new_img, edge_img, crn_img, rect = harris(self._img_show.img,
-        mask, new_img, edge_img, crn_img = harris(self._img_show.img,
-                threshold, sigma, wwidth, wheight, invert=invert_img)
+        mask, new_img, edge_img, crn_img, blur, result = harris(
+                self._img_show.img, threshold, sigma, wwidth, wheight,
+                invert=invert_img)
         #print time.time() - start
         if new_img is None:
             return
@@ -355,6 +442,24 @@ class App(object):
         #rlbl.img = rimg
         #rlbl.pack(fill='both', expand=True)
         #rframe.pack(fill='both', expand=True)
+
+        win3 = Tkinter.Toplevel()
+        cimg = ImageTk.PhotoImage(blur)
+        cframe = Tkinter.Frame(win3)
+        clbl = scrolledcanvas(win3, cframe, highlightthickness=0)
+        canvas_addimage(clbl, cimg, *blur.size)
+        clbl.img = cimg
+        clbl.pack(fill='both', expand=True)
+        cframe.pack(fill='both', expand=True)
+
+        win3 = Tkinter.Toplevel()
+        cimg = ImageTk.PhotoImage(result)
+        cframe = Tkinter.Frame(win3)
+        clbl = scrolledcanvas(win3, cframe, highlightthickness=0)
+        canvas_addimage(clbl, cimg, *result.size)
+        clbl.img = cimg
+        clbl.pack(fill='both', expand=True)
+        cframe.pack(fill='both', expand=True)
 
     def _load_img(self):
         name = tkFileDialog.askopenfilename(initialdir=os.getcwd())
