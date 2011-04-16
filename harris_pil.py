@@ -11,8 +11,6 @@ from PIL import Image, ImageDraw, ImageOps, ImageTk
 from colorsys import rgb_to_hsv
 from collections import defaultdict
 
-sys.setrecursionlimit(10000)
-
 #import matplotlib
 #matplotlib.use('TkAgg') # XXX Esse backend deixa mais lento o plot,
 #                        # mas se não usar não da pra mudar de imagem :/
@@ -46,7 +44,6 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     edge_pix = edge_img.load()
     corner_img = Image.new('L', img.size)
     corner_pix = corner_img.load()
-    #rect_img = Image.new('L', img.size)
     caption_reg_img = Image.new('L', img.size)
     caption_pix = caption_reg_img.load()
 
@@ -56,15 +53,8 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     #band = [ImageOps.grayscale(img)]
     band = list(img.split())
     for img_gray in band:
-        do_harris(new_img, img_gray, edge_pix, edge_img, corner_pix, #rect_img,
+        do_harris(new_img, img_gray, edge_pix, edge_img, corner_pix,
                 threshold, w)
-        from scipy import ndimage
-        edge_blur = edge_img.copy()
-        edge_blur_pix = edge_blur.load()
-        result = ndimage.gaussian_filter(numpy.asarray(edge_blur), 1)
-        for x in xrange(result.shape[1]):
-            for y in xrange(result.shape[0]):
-                edge_blur_pix[x, y] = result[y, x]
 
     max_x, max_y = new_img.size
 
@@ -108,22 +98,20 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     maskelems = masksize ** 2
     start = (masksize - 1) / 2
 
-    for _ in xrange(2): # XXX N aplicações do filtro da mediana
-        for x in xrange(start, max_x - start):
-            for y in xrange(start, max_y - start):
-                val = [caption_pix[x+i, y+j]
-                    for i in xrange(-start, start + 1)
-                    for j in xrange(-start, start + 1)]
-                val.sort()
-                data[y * max_x + x] = val[maskelems / 2]
+    for x in xrange(start, max_x - start):
+        for y in xrange(start, max_y - start):
+            val = [caption_pix[x+i, y+j]
+                for i in xrange(-start, start + 1)
+                for j in xrange(-start, start + 1)]
+            val.sort()
+            data[y * max_x + x] = val[maskelems / 2]
     caption_reg_img.putdata(data)
 
 
-    return w, new_img, edge_img, corner_img, edge_blur, caption_reg_img
+    return w, new_img, edge_img, corner_img, caption_reg_img
 
 
-#def do_harris(new_img, img_gray, edge_pix, corner_pix, rect_img, threshold, w):
-def do_harris(new_img, img_gray, edge_pix, edge_img,corner_pix, threshold, w):
+def do_harris(new_img, img_gray, edge_pix, edge_img, corner_pix, threshold, w):
     img_orig = new_img.copy()
     img_pix = new_img.load()
     img2d = numpy.asarray(img_gray)
@@ -209,11 +197,9 @@ def do_harris(new_img, img_gray, edge_pix, edge_img,corner_pix, threshold, w):
         draw.rectangle((x-1, y-1, x+1, y+1), fill='white')
 
     max_x, max_y = img_orig.size
-    #print dirs
 
-    #find_rectangles(img_orig, rect_img, edge_pix, corner)
 
-    print R
+    #print R
     # XXX Trying to display R as a heatmap
     #f = pyplot.figure(figsize=(4, 3), frameon=False)
 
@@ -235,7 +221,7 @@ def do_harris(new_img, img_gray, edge_pix, edge_img,corner_pix, threshold, w):
     #pp.close()
 
 
-def flood_fill(edge_pix, max_x, max_y):#, x=0, y=0):
+def flood_fill(edge_pix, max_x, max_y):
     to_do = [(0, 0)]
     while to_do:
         x, y = to_do.pop()
@@ -250,78 +236,7 @@ def flood_fill(edge_pix, max_x, max_y):#, x=0, y=0):
             if not edge_pix[x, y-1]: to_do.append((x, y-1))
 
 
-def find_rectangles(img_orig, rect_img, edge_pix, corner):
-    max_x, max_y = img_orig.size
-    area = 3
-
-    # Idéia da cabeça de ontem a noite
-    print corner
-
-
-
-def find_rectangles2(img_orig, rect_img, edge_pix, corner):
-    img_pix = img_orig.load()
-    _, max_y = img_orig.size
-
-    # Transform points into cartesian coords (easier to visualize)
-    interest2 = map(lambda p: [p[0], max_y - p[1]], corner)
-    interest2.sort()
-
-    test_x = defaultdict(list)
-    test_y = defaultdict(list)
-    max_pt_disalignment = 6
-    max_cdist = 0.42 # 42 # :)
-
-    draw = ImageDraw.Draw(rect_img)
-
-    for (x, y) in interest2:
-        for key in test_x:
-            if abs(y - key) < max_pt_disalignment:
-                y = key
-                break
-        test_x[y].append(x)
-
-    for (x, y) in interest2:
-        for key in test_y:
-            if abs(x - key) < max_pt_disalignment:
-                x = key
-                break
-        test_y[x].append(y)
-
-    for key, value in test_y.iteritems():
-        if len(value) < 2:
-            continue
-        print key, value
-        first_color = img_pix[key, max_y - value[0]]
-        value.sort()
-        for v1, v2 in zip(value, value[1::]):
-            for j in xrange(v1, v2):
-                a = rgb_to_hsv(*img_pix[key, max_y - j])[:2]
-                b = rgb_to_hsv(*first_color)[:2]
-                if dist_l2(a, b) > max_cdist:
-                    break
-            else:
-                draw.line((key, max_y - v1, key, max_y - v2), fill=255)
-    print '-' * 30
-
-    for key, value in test_x.iteritems():
-        if len(value) < 2:
-            continue
-        print key, value
-        first_color = img_pix[value[0], max_y - key]
-        value.sort()
-        for v1, v2 in zip(value, value[1::]):
-            for i in xrange(v1, v2):
-                a = rgb_to_hsv(*img_pix[i, max_y - key])[:2]
-                b = rgb_to_hsv(*first_color)[:2]
-                if dist_l2(a, b) > max_cdist:
-                    break
-            else:
-                draw.line((v1, max_y - key, v2, max_y - key), fill=255)
-
-
 # XXX Testing hysteresis
-#def do_hysteresis(R, img_pix, edge_pix, edge, lower_threshold, dirs):
 def do_hysteresis(img_pix, edge_pix, edge, maybe_edge, lower_threshold, dirs):
     while edge:
         i, j = edge.pop()
@@ -329,9 +244,6 @@ def do_hysteresis(img_pix, edge_pix, edge, maybe_edge, lower_threshold, dirs):
         edge_pix[i, j] = 255
         for x, y in dirs:
             try:
-                # XXX Assim não considera "Maximum Non-Suppression" feito
-                #if (R[j+y, i+x] < -lower_threshold and not edge_pix[i+x, j+y]):
-                #    edge.add((i+x, j+y))
                 if (maybe_edge[i+x, j+y] and not edge_pix[i+x, j+y]):
                     edge.add((i+x, j+y))
             except IndexError:
@@ -388,10 +300,9 @@ class App(object):
         invert_img = self._invert.get()
 
         start = time.time()
-        #mask, new_img, edge_img, crn_img, rect = harris(self._img_show.img,
-        mask, new_img, edge_img, crn_img, blur, result = harris(
-                self._img_show.img, threshold, sigma, wwidth, wheight,
+        images = harris(self._img_show.img, threshold, sigma, wwidth, wheight,
                 invert=invert_img)
+        mask, new_img = images[0], images[1]
         #print time.time() - start
         if new_img is None:
             return
@@ -416,50 +327,16 @@ class App(object):
         img.pack(fill='both', expand=True)
         img_frame.pack(fill='both', expand=True)
 
-        win2 = Tkinter.Toplevel()
-        eimg = ImageTk.PhotoImage(edge_img)
-        eframe = Tkinter.Frame(win2)
-        elbl = scrolledcanvas(win2, eframe, highlightthickness=0)
-        canvas_addimage(elbl, eimg, *edge_img.size)
-        elbl.img = eimg
-        elbl.pack(fill='both', expand=True)
-        eframe.pack(fill='both', expand=True)
+        for image in images[2:]:
+            win = Tkinter.Toplevel()
+            iimg = ImageTk.PhotoImage(image)
+            iframe = Tkinter.Frame(win)
+            ilbl = scrolledcanvas(win, iframe, highlightthickness=0)
+            canvas_addimage(ilbl, iimg, *image.size)
+            ilbl.img = iimg
+            ilbl.pack(fill='both', expand=True)
+            iframe.pack(fill='both', expand=True)
 
-        win3 = Tkinter.Toplevel()
-        cimg = ImageTk.PhotoImage(crn_img)
-        cframe = Tkinter.Frame(win3)
-        clbl = scrolledcanvas(win3, cframe, highlightthickness=0)
-        canvas_addimage(clbl, cimg, *crn_img.size)
-        clbl.img = cimg
-        clbl.pack(fill='both', expand=True)
-        cframe.pack(fill='both', expand=True)
-
-        #win4 = Tkinter.Toplevel()
-        #rimg = ImageTk.PhotoImage(rect)
-        #rframe = Tkinter.Frame(win4)
-        #rlbl = scrolledcanvas(win4, rframe, highlightthickness=0)
-        #canvas_addimage(rlbl, rimg, *rect.size)
-        #rlbl.img = rimg
-        #rlbl.pack(fill='both', expand=True)
-        #rframe.pack(fill='both', expand=True)
-
-        win3 = Tkinter.Toplevel()
-        cimg = ImageTk.PhotoImage(blur)
-        cframe = Tkinter.Frame(win3)
-        clbl = scrolledcanvas(win3, cframe, highlightthickness=0)
-        canvas_addimage(clbl, cimg, *blur.size)
-        clbl.img = cimg
-        clbl.pack(fill='both', expand=True)
-        cframe.pack(fill='both', expand=True)
-
-        win3 = Tkinter.Toplevel()
-        cimg = ImageTk.PhotoImage(result)
-        cframe = Tkinter.Frame(win3)
-        clbl = scrolledcanvas(win3, cframe, highlightthickness=0)
-        canvas_addimage(clbl, cimg, *result.size)
-        clbl.img = cimg
-        clbl.pack(fill='both', expand=True)
-        cframe.pack(fill='both', expand=True)
 
     def _load_img(self):
         name = tkFileDialog.askopenfilename(initialdir=os.getcwd())
