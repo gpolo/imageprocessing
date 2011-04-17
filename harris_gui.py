@@ -1,6 +1,7 @@
 # -*- encoding: utf8 -*-
 import os
 import sys
+import numpy
 import Tkinter
 import tkFileDialog
 from PIL import Image, ImageTk
@@ -49,7 +50,10 @@ class App(object):
         self._build(root)
 
     def set_image(self, imgpath):
-        src_img = Image.open(imgpath)
+        if isinstance(imgpath, basestring):
+            src_img = Image.open(imgpath)
+        else:
+            src_img = imgpath
         img = ImageTk.PhotoImage(src_img)
         canvas_addimage(self._img_show, img, *src_img.size)
         self._img_show.s_img = img
@@ -109,7 +113,7 @@ class App(object):
 
     def _save(self):
         try:
-            image = root.nametowidget(root.focus_get()).image
+            image = root.nametowidget(root.focus_displayof()).image
         except AttributeError:
             return
         else:
@@ -176,7 +180,6 @@ class App(object):
         detector_frame.pack(side='top')
 
         img_frame = Tkinter.Frame(root)
-        #self._img_show = Tkinter.Label(img_frame)
         self._img_show = scrolledcanvas(root, img_frame, highlightthickness=0)
 
         self._img_show.pack(fill='both', expand=True)
@@ -189,9 +192,16 @@ class App(object):
         root.bind('<Button-3>', lambda evt: popup.post(evt.x_root, evt.y_root))
 
 
-
-root = Tkinter.Tk()
-root.title('Harris Detector')
-app = App(root)
-app.set_image(sys.argv[1])
-root.mainloop()
+if __name__ == "__main__":
+    root = Tkinter.Tk()
+    root.title('Harris Detector')
+    app = App(root)
+    if len(sys.argv) != 2:
+        z = numpy.zeros((512, 512))
+        z[30:40, 30:40] = numpy.ones((10, 10)) * 255
+        x = numpy.fft.fftshift(numpy.fft.fft2(z))
+        img = Image.fromarray(numpy.log(1 + abs(x))**2)
+        app.set_image(img)
+    else:
+        app.set_image(sys.argv[1])
+    root.mainloop()
