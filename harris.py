@@ -139,7 +139,7 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
 
 
     return (w, new_img, raw_harris_img, thr1_img, uthr_img, hyst_img,
-            gaps_img, almost_there, caption_reg_img)
+            gaps_img, almost_there, edge_img, caption_reg_img)
             #gaps_img, almost_there, edge_img, corner_img, caption_reg_img)
 
 
@@ -174,13 +174,15 @@ def do_harris(new_img, img_gray, raw_harris_img, thr1_img, uthr_img, hyst_img,
     # Hysteresis on edges
     edge = set()
     maybe_edge = defaultdict(int)
-    max_edge = abs(numpy.min(R[R<0]))
+    max_edge = abs(numpy.min(R))
     #min_edge = abs(numpy.max(R[R<0]))
     #avg_edge = abs(numpy.mean(R[R<0]))
     #stddev_edge = numpy.std(R[R<0])
     #median_edge = abs(numpy.median(R[R<0]))
-    upper_threshold = max_edge - (max_edge / 100. * 98)
-    lower_threshold = max_edge - (max_edge / 100. * 99.99)
+    #upper_threshold = max_edge - (max_edge / 100. * 98)
+    upper_threshold = max_edge / 100. * 2
+    #lower_threshold = max_edge - (max_edge / 100. * 99.99)
+    lower_threshold = max_edge / 100. * 0.01
     print "Hysteresis thresholds: %.2f %.2f" % (upper_threshold,
             lower_threshold)
 
@@ -205,7 +207,8 @@ def do_harris(new_img, img_gray, raw_harris_img, thr1_img, uthr_img, hyst_img,
             if R[j, i] > 0:
                 if R[j, i] == numpy.max(R[j-1:j+2, i-1:i+2]):
                     raw_draw.rectangle((i-1, j-1, i+1, j+1), fill=corner_color)
-                    if R[j, i] - discard > 0:
+                    #if R[j, i] - discard > 0:
+                    if R[j, i] > discard:
                         corner.append([i, j])
 
             # Edge pixel
@@ -218,7 +221,7 @@ def do_harris(new_img, img_gray, raw_harris_img, thr1_img, uthr_img, hyst_img,
                         raw_pix[i, j] = edge_color
                         thr1_pix[i, j] = edge_color
                 else:
-                    if R[j][i] < min([R[j - 1, i], R[j + 1, i]]):
+                    if R[j, i] < min([R[j - 1, i], R[j + 1, i]]):
                         test_edge = (i, j, abs(R[j, i]))
                         raw_pix[i, j] = edge_color
                         thr1_pix[i, j] = edge_color
