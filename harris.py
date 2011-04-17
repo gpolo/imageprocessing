@@ -54,8 +54,8 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     w = gaussian_mask(wwidth, wheight, sigma)
 
     #band = list(img.split()) + [ImageOps.grayscale(img)]
-    band = [ImageOps.grayscale(img)]
-    #band = list(img.split())
+    #band = [ImageOps.grayscale(img)]
+    band = list(img.split())
     for img_gray in band:
         do_harris(new_img, img_gray, raw_harris_img, edge_pix, edge_img,
                 corner_pix, threshold, w)
