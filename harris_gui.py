@@ -203,7 +203,8 @@ if __name__ == "__main__":
     app = App(root)
     if len(sys.argv) != 2:
         z = numpy.zeros((512, 512))
-        z[30:40, 30:40] = numpy.ones((10, 10)) * 255
+        size = 10, 10
+        z[30:30+size[0], 30:30+size[1]] = numpy.ones(size) * 255
         x = numpy.fft.fftshift(numpy.fft.fft2(z))
         img = Image.fromarray(numpy.log(1 + abs(x))**2)
         app.set_image(img.convert('RGB'))
