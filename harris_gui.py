@@ -54,6 +54,7 @@ class App(object):
             src_img = Image.open(imgpath)
         else:
             src_img = imgpath
+        root.image = src_img
         img = ImageTk.PhotoImage(src_img)
         canvas_addimage(self._img_show, img, *src_img.size)
         self._img_show.s_img = img
@@ -112,8 +113,11 @@ class App(object):
 
 
     def _save(self):
+        widget = root.nametowidget(root.focus_displayof())
+        while not hasattr(widget, 'withdraw'):
+            widget = widget.master
         try:
-            image = root.nametowidget(root.focus_displayof()).image
+            image = widget.image
         except AttributeError:
             return
         else:
@@ -150,6 +154,7 @@ class App(object):
         btn = Tkinter.Button(ctrl_frame, text='Apply',
                 command=self._run_detector)
         root.bind('<Return>', self._run_detector)
+
 
         label.pack(side='left')
         self._threshold.pack(side='left')
@@ -201,7 +206,7 @@ if __name__ == "__main__":
         z[30:40, 30:40] = numpy.ones((10, 10)) * 255
         x = numpy.fft.fftshift(numpy.fft.fft2(z))
         img = Image.fromarray(numpy.log(1 + abs(x))**2)
-        app.set_image(img)
+        app.set_image(img.convert('RGB'))
     else:
         app.set_image(sys.argv[1])
     root.mainloop()
