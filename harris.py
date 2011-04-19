@@ -6,9 +6,6 @@ from PIL import Image, ImageDraw, ImageOps, ImageTk
 from collections import defaultdict
 
 
-def dist_l2(p1, p2):
-    return sum([(x1 - x2) ** 2 for x1, x2 in zip(p1, p2)]) ** (1/2.)
-
 def gaussian_mask(width, height, sigma):
     u = (width - 1) / 2
     v = (height - 1) / 2
