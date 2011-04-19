@@ -35,7 +35,10 @@ def flood_fill(pix, max_x, max_y, color=128):
 
 
 def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
+    grayscale = False
     if len(img.getbands()) == 1:
+        if img.getbands()[0] == 'L':
+            grayscale = True
         img = img.convert('RGB')
     if invert:
         img = ImageOps.invert(img)
@@ -69,6 +72,8 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
     #band = list(img.split()) + [ImageOps.grayscale(img)]
     #band = [ImageOps.grayscale(img)]
     band = list(img.split())
+    if grayscale:
+        band = [band[0]]
     for img_gray in band:
         do_harris(new_img, img_gray, raw_harris_img, thr1_img, uthr_img,
                 hyst_img, edge_pix, edge_img, corner_pix, threshold, w)
