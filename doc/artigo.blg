@@ -1,0 +1,47 @@
+This is BibTeX, Version 0.99c (TeX Live 2009)
+The top-level auxiliary file: artigo.aux
+The style file: sbc.bst
+Database file #1: biblio.bib
+Warning--empty publisher in moravec
+You've used 5 entries,
+            1935 wiz_defined-function locations,
+            500 strings with 4379 characters,
+and the built_in function-call counts, 2067 in all, are:
+= -- 206
+> -- 64
+< -- 6
++ -- 20
+- -- 20
+* -- 144
+:= -- 336
+add.period$ -- 15
+call.type$ -- 5
+change.case$ -- 34
+chr.to.int$ -- 5
+cite$ -- 6
+duplicate$ -- 101
+empty$ -- 162
+format.name$ -- 31
+if$ -- 434
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 6
+newline$ -- 28
+num.names$ -- 15
+pop$ -- 45
+preamble$ -- 1
+purify$ -- 35
+quote$ -- 0
+skip$ -- 78
+stack$ -- 0
+substring$ -- 132
+swap$ -- 25
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 28
+warning$ -- 1
+while$ -- 16
+width$ -- 0
+write$ -- 65
+(There was 1 warning)

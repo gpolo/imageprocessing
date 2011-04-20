@@ -41,7 +41,20 @@ do detector de Harris}
 
 \section{Introdução}
 
+A
 \cite{harris}
+
+B
+
+C
+
+D
+
+E
+
+F
+
+G
 
 
 \section{O detector de Harris}
@@ -141,7 +154,7 @@ definidas.
 \end{align}
 
 Na Equação \ref{cornerEq},  os pontos de canto que  não são máximos em
-sua vizinha  direta são  descartados. No caso  dos pontos de  borda, a
+sua vizinhança direta são descartados.  No caso dos pontos de borda, a
 Equação  \ref{edgeEq} indica que  só serão  bordas aqueles  pontos que
 forem  mínimos onde  seu gradiente  é máximo  -- resultando  em bordas
 finas.
@@ -157,11 +170,11 @@ inferiores a  este valor. Na  segunda, definimos um limiar  inferior e
 outro  superior --  também com  base numa  percentagem do  maior valor
 absoluto de ponto de borda --  para os pontos de borda e classificamos
 cada  borda de  acordo  com  estes limiares  para,  então, realizar  a
-histerese.  Estas  duas primeiras etapas são realizadas  em cada banda
-da imagem e os resultados  são combinados numa única imagem.  A imagem
-resultante até este passo é  formada pelas bordas e cantos escolhidas,
-com  os cantos  sendo representados  como quadrados  3x3  centrados no
-ponto de canto real.
+histerese   \cite{snakebook}.   Estas   duas   primeiras  etapas   são
+realizadas em cada banda da imagem e os resultados são combinados numa
+única  imagem.  A  imagem resultante  até este  passo é  formada pelas
+bordas  e cantos escolhidas,  com os  cantos sendo  representados como
+quadrados 3x3 centrados no ponto de canto real.
 
 A partir deste ponto,  são feitas tentativas para completar retângulos
 quase fechados  que possivelmente  representam regiões de  legenda nas
