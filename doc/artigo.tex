@@ -41,20 +41,30 @@ do detector de Harris}
 
 \section{Introdução}
 
-A
-\cite{harris}
+O detector de Harris \cite{harris}  é capaz de indicar pontos de canto
+e de  borda por  meio das  intensidades dos pixels  de uma  imagem. No
+caso, estamos  interessados na aplicação deste detector  em imagens de
+ritmo  visual  \cite{rhythm} para  extrair  regiões  de legendas  como
+aquelas presentes na Figura \ref{rhythm}.
 
-B
+\begin{figure}[h!]
+  \includegraphics[width=\linewidth]{figs/harrypotter1.png}
+  \caption{Uma imagem de ritmo visual com regiões de legenda\label{rhythm}}
+\end{figure}
 
-C
+Devido a não  uniformidade entre padrões de legenda  e resto da imagem
+nessa  classe  de  imagens,  aplicamos  uma série  de  processos  para
+complementar  o resultado  obtido do  detector de  Harris. Descrevemos
+sete  simples  etapas  consecutivas   que  tem  como  objetivo  fechar
+possíveis retângulos que possam representar legendas.
 
-D
-
-E
-
-F
-
-G
+Este  trabalho  está organizado  em  quatro  outras  seções. Na  seção
+seguinte,  apresentamos  um resumo  do  funcionamento  do detector  de
+Harris e  uma representação visual do mesmo.   Em seguida, descrevemos
+nossa  implementação  de  sete  passos adicionais  ao  Harris.  Depois
+avaliamos os resultados obtidos  com as técnicas utilizadas para poder
+concluir a respeito do detector de Harris aplicado em imagens de ritmo
+visual.
 
 
 \section{O detector de Harris}
@@ -64,12 +74,6 @@ A partir de  problemas existentes no detector de  Moravec, definido em
 básica desse detector  é conseguir indicar, ao mesmo  tempo, pontos de
 canto e de  borda com o cálculo de uma  matriz que fornece informações
 locais em cada pixel da imagem.
-
-% XXX Pensando ...  O  detector de Harris \cite{harris} é classificado
-% como um  método baseado  em intensidade \cite{detectors}.   capaz de
-% indicar pontos de borda e canto em uma imagem. Ele parte do detector
-% de Moravec \cite{moravec} e descreve diversas melhorias sobre aquele
-
 
 Para definir essa matriz utilizada em Harris, primeiro consideramos uma
 imagem $I$ e uma máscara $w$  como dadas. A máscara pode ser calculada
@@ -239,7 +243,7 @@ considerado, por nós, ruim e bom, respectivamente.
 Na  Figura \ref{lowcontrast}, acreditamos  que cerca  de seu  um terço
 superior não apresente legendas  e nosso método detecta poucas regiões
 nessa  área.  % Entretanto,  no   segundo  terço  o   método  apresenta
-% falso-positivos em excesso. %% Não é mais valido com a última etapa.
+% falso-positivos em excesso. %% Não é mais verdade com a última etapa.
 Na última parte  desta imagem é onde grande  parte das legendas estão,
 mas  a  taxa   de  acerto  foi  baixa.   Por   outro  lado,  a  Figura
 \ref{highcontrast}  apresenta o  caso  em que  nosso  método tem  bons
