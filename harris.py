@@ -84,9 +84,9 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
             if edge_pix[x, y]:
                 continue
             try:
-                if edge_pix[x-1, y] or edge_pix[x+1, y]:
+                if edge_pix[x-1, y] and edge_pix[x+1, y]:
                     new_white.append((x, y))
-                elif edge_pix[x, y-1] or edge_pix[x, y+1]:
+                elif edge_pix[x, y-1] and edge_pix[x, y+1]:
                     new_white.append((x, y))
             except IndexError:
                 pass
@@ -139,9 +139,13 @@ def harris(img, threshold, sigma=0.5, wwidth=3, wheight=3, invert=False):
             data[y * max_x + x] = val[maskelems / 2]
     caption_reg_img.putdata(data)
 
+    prev_del = caption_reg_img.copy()
+
+    # Delete random points
+    caption_reg_img = remove_components_too_small(caption_reg_img, 20)
 
     return (w, new_img, raw_harris_img, thr1_img, uthr_img, hyst_img,
-            gaps_img, almost_there, edge_img, caption_reg_img)
+            gaps_img, almost_there, edge_img, prev_del, caption_reg_img)
             #gaps_img, almost_there, edge_img, corner_img, caption_reg_img)
 
 
@@ -274,3 +278,42 @@ def do_hysteresis(img_pix, edge_pix, edge, maybe_edge,lower_threshold,hyst_pix):
                     edge.add((i+x, j+y))
             except IndexError:
                 pass
+
+
+def remove_components_too_small(binimg, minsize=10):
+    max_x, max_y = binimg.size
+    visited = set()
+    components = []
+
+    bin = binimg.load()
+
+    for x in xrange(max_x):
+        for y in xrange(max_y):
+
+            if (x, y) not in visited and bin[x, y]:
+                component = []
+                q = set([(x, y)])
+                while q:
+                    i, j = q.pop()
+                    component.append((i, j))
+                    visited.add((i, j))
+                    try:
+                        if (i+1, j) not in visited and bin[i+1, j]:
+                            q.add((i + 1, j))
+                        if (i, j+1) not in visited and bin[i, j+1]:
+                            q.add((i, j + 1))
+                        if (i-1, j) not in visited and bin[i-1, j]:
+                            q.add((i - 1, j))
+                        if (i, j-1) not in visited and bin[i, j-1]:
+                            q.add((i, j - 1))
+                    except IndexError:
+                        pass
+
+                components.append(component)
+
+    components = filter(lambda x: len(x) > minsize, components)
+    binarr = numpy.zeros(binimg.size)
+    for component in components:
+        for c in component:
+            binarr[c] = 255
+    return Image.fromarray(binarr.T).convert('L')
