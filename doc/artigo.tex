@@ -9,7 +9,7 @@
 \usepackage{tabularx}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{mathabx}
+% \usepackage{mathabx}
 
 \sloppy
 
@@ -42,12 +42,10 @@ do detector de Harris}
 
 A partir do detector de Moravec, definido em \cite{moravec}, ..
 
-% XXX Pensando ...
-%O detector de Harris \cite{harris} é classificado como um método
-%baseado em intensidade \cite{detectors}.
-% capaz de indicar pontos de borda
-%e canto em uma imagem. Ele parte do detector de Moravec \cite{moravec}
-%e descreve diversas melhorias sobre aquele 
+% XXX Pensando ...  O  detector de Harris \cite{harris} é classificado
+% como um  método baseado  em intensidade \cite{detectors}.   capaz de
+% indicar pontos de borda e canto em uma imagem. Ele parte do detector
+% de Moravec \cite{moravec} e descreve diversas melhorias sobre aquele
 
 Dada uma imagem $I$ e uma máscara $w$ ...
 
@@ -56,16 +54,16 @@ $w_{u,v} = \exp -\frac{u^2 + v^2}{2\sigma^2}$
 
 % Produto de Hadamard: \circ
 \begin{align*}
-  X & = I \convolution [-1, 0, 1] \\
-  Y & = I \convolution [-1, 0, 1]^\intercal \\
-  A & = (X \circ X) \convolution w \\
-  B & = (Y \circ Y) \convolution w \\
-  C & = (X \circ Y) \convolution w
+  X & = I * [-1, 0, 1] \\
+  Y & = I * [-1, 0, 1]^T \\
+  A & = (X \circ X) * w \\
+  B & = (Y \circ Y) * w \\
+  C & = (X \circ Y) * w
 \end{align*}
 
-Com $f \convolution h$ representando a convolução de $f$ com $h$ e
-$M_1 \circ M_2$ sendo o produto de Hadamard que realiza a
-multiplicação ponto a ponto entre as matrizes $M_1$ e $M_2$.
+Com $f  * h$ representando  a convolução de  $f$ com $h$ e  $M_1 \circ
+M_2$ sendo o  produto de Hadamard que realiza  a multiplicação ponto a
+ponto entre as matrizes $M_1$ e $M_2$.
 
 ... explicação aqui .... Harris constroi a matriz R da forma seguinte:
 
@@ -76,7 +74,10 @@ multiplicação ponto a ponto entre as matrizes $M_1$ e $M_2$.
 \end{align}
 
 
-... (visualização de uma matriz R na Figura \ref{figR}) ...
+Na  figura \ref{figR}  há uma  representação  visual da  matriz R.   É
+possível ver claramente  os pontos definidos como borda  e como cantos
+no \textit{heatmap}. Os dois pontos  pretos são borda, enquanto que os
+quatro brancos são cantos.
 
 \begin{figure}[h]
   \centering
@@ -88,8 +89,8 @@ multiplicação ponto a ponto entre as matrizes $M_1$ e $M_2$.
 
 
 As Equações \ref{cornerEq} e \ref{edgeEq} definem, respectivamente, os
-conjuntos de pontos de canto e de borda com base na matriz $R$. As
-coordenadas $x$ e $y$ que não pertencem a $R$ são tomadas como não
+conjuntos de  pontos de canto  e de borda  com base na matriz  $R$. As
+coordenadas $x$  e $y$ que  não pertencem a  $R$ são tomadas  como não
 definidas.
 
 \begin{align}
@@ -109,55 +110,61 @@ Na Equação \ref{cornerEq}, os pontos de canto que não são máximos ..
 
 \section{Implementação}
 
-Com a matriz $R$ (Equação \ref{REq}) construída e os pontos de canto
-(Equação \ref{cornerEq}) e borda (Equação \ref{edgeEq}) definidos,
-realizamos mais seis etapas. Na primeira, a partir de uma percentagem
+Com a matriz  $R$ (Equação \ref{REq}) construída e  os pontos de canto
+(Equação  \ref{cornerEq}) e  borda  (Equação \ref{edgeEq})  definidos,
+realizamos mais seis etapas. Na  primeira, a partir de uma percentagem
 do maior valor em $R$ descartamos os pontos de canto inferiores a este
-valor. Na segunda, definimos um limiar inferior e superior -- também
+valor. Na segunda,  definimos um limiar inferior e  superior -- também
 com base numa porcentagem do maior valor absoluto de ponto de borda --
 para os pontos de borda e classificamos cada borda de acordo com estes
-limiares para, então, realizar a histerese. Estas duas primeiras
-etapas são realizadas em cada banda da imagem e os resultados são
-combinados numa única imagem. A imagem resultante até este passo é
-formada pelas bordas e cantos escolhidas, com os cantos sendo
+limiares  para, então,  realizar  a histerese.   Estas duas  primeiras
+etapas  são realizadas em  cada banda  da imagem  e os  resultados são
+combinados numa  única imagem.  A  imagem resultante até este  passo é
+formada  pelas  bordas  e  cantos  escolhidas,  com  os  cantos  sendo
 representados como um quadrado 3x3 centrado no ponto de canto real.
 
-A partir deste ponto, são feitas tentativas para completar retângulos
-quase fechados que possívelmente representam regiões de legenda nas
-imagens de ritmo visual. Para cada ponto ainda não preenchido, é
-verificado se ao menos um de seus vizinhos imediatos na horizontal
-ou vertical foram preencidos. Caso algum deles tenham sido, este ponto
-não preenchido é marcado para preenchimento no final deste processo.
+A partir deste ponto,  são feitas tentativas para completar retângulos
+quase fechados  que possívelmente  representam regiões de  legenda nas
+imagens  de ritmo  visual. Para  cada  ponto ainda  não preenchido,  é
+verificado  se  ambos seus  vizinhos  imediatos  na  horizontal ou  na
+vertical  foram preencidos.   Caso ambos  em uma  das  direções tenham
+sido, este ponto não preenchido  é marcado para preenchimento no final
+deste processo.
 
-Em seguida, o algoritmo \textit{flood fill} é aplicado para as
-direções horizontais e verticais partindo do ponto $(0, 0)$. Nesta
+Em  seguida,  o  algoritmo  \textit{flood  fill} é  aplicado  para  as
+direções  horizontais e verticais  partindo do  ponto $(0,  0)$. Nesta
 implementação, este ponto, garantidamente, é inicialmente preto devido
-a não consideração dos pontos em $R$, para construir as imagens até
-este ponto, onde a máscara gaussiana escolhida não esta
-inteiramente contida na imagem (considerando a convolução no domínio
-espacial).
+a não  consideração dos pontos em  $R$, para construir  as imagens até
+este ponto,  onde a máscara gaussiana escolhida  não esta inteiramente
+contida na imagem (considerando a convolução no domínio espacial).
 
-Na quinta etapa, os pontos que permanceram pretos são aqueles contidos
-dentro de formas fechadas. Com isso, uma nova imagem é
-criada para apresentar aqueles pontos pretos agora como brancos. Todos
-os pontos brancos nesta imagem formam as possíveis regiões de
-legenda. Como etapa final, é feita uma filtragem da mediana para
-eliminar pequenas regiões que permaneceram devido a grande
-heterogeneidade das imagens de ritmo visual.
+Na  quinta  etapa,  os  pontos  que permaneceram  pretos  são  aqueles
+contidos dentro de formas fechadas. Com isso, uma nova imagem é criada
+para apresentar  aqueles pontos pretos  agora como brancos.   Todos os
+pontos brancos  nesta imagem formam  as possíveis regiões  de legenda.
+Como  parte da  etapa final,  é feita  uma filtragem  da  mediana para
+eliminar   pequenas   regiões  que   permaneceram   devido  a   grande
+heterogeneidade   das  imagens   de  ritmo   visual.   Finalmente,  um
+processamento um  tanto quanto heurístico é feito.  Cada região branca
+da  imagem  é considerada  uma  componente  conexa,  é feita  então  a
+contagem  de  pixels em  cada  componente  conexa.  Fixamos um  limiar
+inferior  de 20 pixels  por componente  conexa para  que ela  não seja
+desconsiderada.  Isso acaba limpando  muitos fragmentos  que sobravam,
+como pequenos pontos.
 
 \section{Avaliação}
 
-Para realizar a avaliação, os parâmetros foram fixados para
-todos os testes como: máscara guassiana 3x3 com $\sigma = 2$, limiar para
-pontos de canto = $0.5 (\frac{max(R)}{100})$, limiares
-$H = 2 (\frac{|min(R)|}{100})$ e $L = 0.01 (\frac{|min(R)|}{100})$ para
+Para realizar a  avaliação, os parâmetros foram fixados  para todos os
+testes  como: máscara  guassiana 3x3  com  $\sigma =  2$, limiar  para
+pontos  de  canto  =  $0.5  (\frac{max(R)}{100})$,  limiares  $H  =  2
+(\frac{|min(R)|}{100})$  e  $L  =  0.01  (\frac{|min(R)|}{100})$  para
 histerese e máscara 5x5 para filtragem da mediana.
 
-De modo geral, o detector de Harris com os demais passos aplicados
+De modo geral,  o detector de Harris, com  os demais passos aplicados,
 foi capaz de encontrar regiões de legenda quando estas apresentavam um
-contraste adequado na imagem como um todo. As Figuras
-\ref{lowcontrast} e \ref{highcontrast} apresentam um resultado
-considerado, por nós, ruim e outro bom.
+contraste   adequado   na   imagem   como   um   todo.    As   Figuras
+\ref{lowcontrast}   e  \ref{highcontrast}   apresentam   um  resultado
+considerado, por nós, ruim e bom respectivamente.
 
 \begin{figure}[h!]
   \centering
@@ -174,17 +181,15 @@ considerado, por nós, ruim e outro bom.
     erros\label{highcontrast}}
 \end{figure}
 
-Na Figura \ref{lowcontrast}, acreditamos que cerca de seu um
-terço superior não apresente legendas e nosso método detecta poucas
-regiões nessa área. Entretanto, no segundo terço o método apresenta
+Na  Figura \ref{lowcontrast}, acreditamos  que cerca  de seu  um terço
+superior não apresente legendas  e nosso método detecta poucas regiões
+nessa  área.   Entretanto,  no   segundo  terço  o   método  apresenta
 falso-positivos em excesso. Na última parte desta imagem é onde grande
-parte das legendas estão, mas a taxa de acerto foi baixa. Por outro
+parte das  legendas estão, mas a  taxa de acerto foi  baixa. Por outro
 lado, a Figura \ref{highcontrast} apresenta o caso em que nosso método
-tem bons resultados. Apesar de reportar incorretamente algumas partes
-como sendo de legenda, todas as reais regiões de legenda
-foram ao menos parcialmente indicadas.
-
-...
+tem bons resultados. Apesar  de reportar incorretamente algumas partes
+como  sendo de legenda,  todas as  reais regiões  de legenda  foram ao
+menos parcialmente indicadas. 
 
 \begin{figure}[h!]
   \centering
@@ -199,11 +204,30 @@ foram ao menos parcialmente indicadas.
   \caption{...}
 \end{figure}
 
-
-
-
 \section{Conclusão}
 
+Um  dos pontos a  ser discutido  é o  fato de  que, em  certas imagens
+testadas, nem  mesmo humanos  (nós autores) conseguem  identificar com
+total  certeza  a  posição  das  legendas. É  difícil  esperar  de  um
+algoritmo  um  trabalho que  sequer  há  certeza  sobre os  resultados
+esperados. Mesmo assim, em vários casos foi possível guiar o algoritmo
+através  de ajustes  de parâmetros  e consertos  de detalhes  para que
+chegasse em resultados aparentemente satisfatórios.
+
+O detector de  Harris faz muito bem o trabalho que  se propõe a fazer,
+que  é encontrar  cantos.  Para  a  tarefa de  encontrar legendas  nas
+imagens de  ritmo ele até  ajudou no começo,  mas é discutível  se boa
+parte do trabalho não está sendo  feito pelo resto do programa. Há uma
+grande quantidade  de algoritmos heurísticos para  corrigir falhas que
+foram sendo  encontradas no  processo, e sem  isso de nada  serviria o
+detector de Harris  neste caso. É possível que  um outro algoritmo que
+melhor detecte bordas seria mais útil neste trabalho. 
+
+O  número de  linhas de  código para  a implementação  do  detector de
+Harris é mínima quando comparada ao resto do programa. De fato a maior
+parte  do trabalho  é  feita por  outras  filtragens posteriores.  Uma
+crítica é que  talvez fosse possível fazer a mesma  coisa, com a mesma
+quantidade de linhas de código, sem usar Harris.
 
 \bibliographystyle{sbc}
 \bibliography{biblio}
